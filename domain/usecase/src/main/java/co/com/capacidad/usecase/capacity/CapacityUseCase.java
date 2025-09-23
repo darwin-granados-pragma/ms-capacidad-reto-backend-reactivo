@@ -2,11 +2,16 @@ package co.com.capacidad.usecase.capacity;
 
 import co.com.capacidad.model.capacity.Capacity;
 import co.com.capacidad.model.capacity.CapacityCreate;
+import co.com.capacidad.model.capacity.CapacityResponse;
+import co.com.capacidad.model.capacity.CapacitySortBy;
 import co.com.capacidad.model.error.ErrorCode;
 import co.com.capacidad.model.exception.BusinessException;
 import co.com.capacidad.model.gateways.CapacityRepository;
 import co.com.capacidad.model.gateways.TechnologyGateway;
 import co.com.capacidad.model.gateways.TransactionalGateway;
+import co.com.capacidad.model.input.CapacityRetrieveStrategy;
+import co.com.capacidad.model.page.CapacityPageCommand;
+import co.com.capacidad.model.page.PageResponse;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +23,7 @@ public class CapacityUseCase {
   private final CapacityRepository repository;
   private final TechnologyGateway technologyGateway;
   private final TransactionalGateway transactionalGateway;
+  private final CapacityFactoryUseCase factoryUseCase;
 
   public Mono<Capacity> createCapacity(CapacityCreate data) {
     return validateTechnologiesSize(data.idTechnologies())
@@ -27,6 +33,12 @@ public class CapacityUseCase {
             .assignTechnologyToCapacity(capacity.getId(), data.idTechnologies())
             .thenReturn(capacity))
         .as(transactionalGateway::execute);
+  }
+
+  public Mono<PageResponse<CapacityResponse>> getCapacities(CapacityPageCommand command) {
+    CapacitySortBy sortBy = command.getSortBy();
+    CapacityRetrieveStrategy strategy = factoryUseCase.findStrategy(sortBy);
+    return strategy.getCapacityResponse(command);
   }
 
   private Mono<Void> validateTechnologiesSize(Set<String> technologies) {
@@ -44,7 +56,9 @@ public class CapacityUseCase {
     return Mono
         .fromCallable(() -> Capacity
             .builder()
-            .id(UUID.randomUUID().toString())
+            .id(UUID
+                .randomUUID()
+                .toString())
             .name(data.name())
             .description(data.description())
             .isNew(true)

@@ -23,10 +23,9 @@ public enum ErrorCode {
       ExceptionCode.INVALID_INPUT,
       "Error al asignar tecnologías: "
   ),
-  INVALID_TECHNOLOGIES("INVALID-TECHNOLOGIES",
-      ExceptionCode.NOT_FOUND,
-      "Error! "
-  ),
+  INVALID_TECHNOLOGIES("INVALID-TECHNOLOGIES", ExceptionCode.NOT_FOUND, "Error! "),
+  INVALID_SORT_BY("INVALID-SORT-BY", ExceptionCode.INVALID_INPUT, "Parámetro sortBy no válido."),
+  INVALID_PARAMETERS("INVALID_PARAMETERS", ExceptionCode.INVALID_INPUT, "Parámetros inválidos"),
   ;
 
   private final String fullErrorCode;
