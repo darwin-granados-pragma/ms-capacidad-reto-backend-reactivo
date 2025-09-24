@@ -27,7 +27,7 @@ public class RestConsumer implements TechnologyGateway {
   public Mono<Void> assignTechnologyToCapacity(String idCapacity, Set<String> technologies) {
     return client
         .post()
-        .uri("/api/v1/capacities/{id}/technologies", idCapacity)
+        .uri("/api/v1/capacity/{id}/technologies", idCapacity)
         .bodyValue(technologies)
         .retrieve()
         .onStatus(HttpStatusCode::isError,

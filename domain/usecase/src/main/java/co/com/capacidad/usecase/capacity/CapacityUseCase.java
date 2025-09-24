@@ -6,6 +6,7 @@ import co.com.capacidad.model.capacity.CapacityResponse;
 import co.com.capacidad.model.capacity.CapacitySortBy;
 import co.com.capacidad.model.error.ErrorCode;
 import co.com.capacidad.model.exception.BusinessException;
+import co.com.capacidad.model.exception.ObjectNotFoundException;
 import co.com.capacidad.model.gateways.CapacityRepository;
 import co.com.capacidad.model.gateways.TechnologyGateway;
 import co.com.capacidad.model.gateways.TransactionalGateway;
@@ -15,6 +16,7 @@ import co.com.capacidad.model.page.PageResponse;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @RequiredArgsConstructor
@@ -39,6 +41,13 @@ public class CapacityUseCase {
     CapacitySortBy sortBy = command.getSortBy();
     CapacityRetrieveStrategy strategy = factoryUseCase.findStrategy(sortBy);
     return strategy.getCapacityResponse(command);
+  }
+
+  public Mono<Void> validateCapacities(Set<String> capacities) {
+    return Flux
+        .fromIterable(capacities)
+        .flatMap(this::validateCapacityById)
+        .then();
   }
 
   private Mono<Void> validateTechnologiesSize(Set<String> technologies) {
@@ -66,4 +75,10 @@ public class CapacityUseCase {
         .flatMap(repository::save);
   }
 
+  private Mono<Void> validateCapacityById(String id) {
+    return repository
+        .existsById(id)
+        .flatMap(exists -> Boolean.TRUE.equals(exists) ? Mono.empty()
+            : Mono.error(new ObjectNotFoundException(ErrorCode.CAPACITY_NOT_FOUND, id)));
+  }
 }

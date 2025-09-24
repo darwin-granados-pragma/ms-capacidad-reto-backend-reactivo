@@ -49,6 +49,12 @@ public class CapacityReactiveRepositoryAdapter extends
   }
 
   @Override
+  public Mono<Boolean> existsById(String id) {
+    log.info("Validating existence of the capacity by id: {}", id);
+    return super.repository.existsById(id);
+  }
+
+  @Override
   public Mono<Long> getTotalCount() {
     log.info("Getting total elements of the Capacity");
     return super.repository.count();
