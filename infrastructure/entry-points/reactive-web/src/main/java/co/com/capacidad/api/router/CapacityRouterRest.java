@@ -1,5 +1,6 @@
 package co.com.capacidad.api.router;
 
+import static org.springframework.web.reactive.function.server.RequestPredicates.GET;
 import static org.springframework.web.reactive.function.server.RequestPredicates.POST;
 import static org.springframework.web.reactive.function.server.RouterFunctions.route;
 
@@ -8,13 +9,17 @@ import co.com.capacidad.api.error.GlobalErrorWebFilter;
 import co.com.capacidad.api.handler.CapacityHandler;
 import co.com.capacidad.api.model.request.CapacityCreateRequest;
 import co.com.capacidad.api.model.response.CapacityResponse;
+import co.com.capacidad.model.page.PageResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.RouterOperation;
+import org.springdoc.core.annotations.RouterOperations;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -31,7 +36,7 @@ public class CapacityRouterRest {
   private final GlobalErrorWebFilter globalErrorWebFilter;
 
   @Bean
-  @RouterOperation(method = RequestMethod.POST,
+  @RouterOperations({@RouterOperation(method = RequestMethod.POST,
       path = PATH,
       beanClass = CapacityHandler.class,
       beanMethod = "createCapacity",
@@ -60,8 +65,46 @@ public class CapacityRouterRest {
               )
           )}
       )
+  ), @RouterOperation(method = RequestMethod.GET,
+      path = PATH,
+      beanClass = CapacityHandler.class,
+      beanMethod = "findAll",
+      operation = @Operation(operationId = "findAll",
+          summary = "Obtener capacidades y tecnologías asociadas",
+          description = "Recibe datos para parametrizar la búsqueda",
+          parameters = {@Parameter(name = "sortBy",
+              in = ParameterIn.QUERY,
+              required = false,
+              description = "Propiedad a ordenar",
+              schema = @Schema(type = "String")
+          ), @Parameter(name = "sortDirection",
+              in = ParameterIn.QUERY,
+              required = false,
+              description = "Dirección de la lista (asc, desc)",
+              schema = @Schema(type = "String")
+          ), @Parameter(name = "page",
+              in = ParameterIn.QUERY,
+              required = false,
+              description = "Número de pagina a recuperar",
+              schema = @Schema(type = "Integer")
+          ), @Parameter(name = "size",
+              in = ParameterIn.QUERY,
+              required = false,
+              description = "Cantidad de registros por pagina",
+              schema = @Schema(type = "Integer")
+          )},
+          responses = {@ApiResponse(responseCode = "200",
+              description = "Lista de Capacidades recuperada",
+              content = @Content(mediaType = "application/json",
+                  schema = @Schema(implementation = PageResponse.class)
+              )
+          )}
+      )
+  )}
   )
   public RouterFunction<ServerResponse> routerFunction() {
-    return route(POST(PATH), capacityHandler::createCapacity).filter(globalErrorWebFilter);
+    return route(POST(PATH), capacityHandler::createCapacity)
+        .andRoute(GET(PATH), capacityHandler::findAll)
+        .filter(globalErrorWebFilter);
   }
 }

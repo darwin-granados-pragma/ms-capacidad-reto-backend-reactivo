@@ -4,18 +4,24 @@ import co.com.capacidad.model.error.ErrorCode;
 import co.com.capacidad.model.exception.InvalidTechnologyException;
 import co.com.capacidad.model.exception.TechnologyAssignmentException;
 import co.com.capacidad.model.gateways.TechnologyGateway;
+import co.com.capacidad.model.technology.Technology;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class RestConsumer implements TechnologyGateway {
 
   private final WebClient client;
+  private final TechnologyMapper technologyMapper;
 
   @Override
   public Mono<Void> assignTechnologyToCapacity(String idCapacity, Set<String> technologies) {
@@ -49,5 +55,22 @@ public class RestConsumer implements TechnologyGateway {
                 )))
         )
         .bodyToMono(Void.class);
+  }
+
+  @Override
+  public Flux<Technology> getTechnologiesByCapacityId(String idCapacity) {
+    return client
+        .get()
+        .uri("/api/v1/capacity/{id}/technologies", idCapacity)
+        .retrieve()
+        .bodyToFlux(TechnologyResponse.class)
+        .map(technologyMapper::toDomain)
+        .onErrorResume(WebClientResponseException.NotFound.class, ex -> {
+              log.warn("Technology list not found for capacityId={}. The endpoint returned 404.",
+                  idCapacity
+              );
+              return Flux.empty();
+            }
+        );
   }
 }
