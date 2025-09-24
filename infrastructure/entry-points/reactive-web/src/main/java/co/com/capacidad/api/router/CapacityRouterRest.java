@@ -13,6 +13,7 @@ import co.com.capacidad.model.page.PageResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
@@ -31,6 +32,7 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 public class CapacityRouterRest {
 
   private static final String PATH = "/api/v1/capacity";
+  private static final String VALIDATE_CAPACITIES = PATH + "/validate";
 
   private final CapacityHandler capacityHandler;
   private final GlobalErrorWebFilter globalErrorWebFilter;
@@ -100,11 +102,34 @@ public class CapacityRouterRest {
               )
           )}
       )
+  ), @RouterOperation(method = RequestMethod.POST,
+      path = VALIDATE_CAPACITIES,
+      beanClass = CapacityHandler.class,
+      beanMethod = "validateCapacities",
+      operation = @Operation(operationId = "validateCapacities",
+          summary = "Validar capacidades",
+          description = "Recibe lista de identificadores de las capacidades",
+          requestBody = @RequestBody(required = true,
+              content = @Content(mediaType = "application/json",
+                  array = @ArraySchema(schema = @Schema(type = "String", example = "[id1, id2, id3]"
+                  )
+                  )
+              )
+          ),
+          responses = {@ApiResponse(responseCode = "204", description = "Capacidades verificadas"
+          ), @ApiResponse(responseCode = "404",
+              description = "Capacidad no encontrada",
+              content = @Content(mediaType = "application/json",
+                  schema = @Schema(implementation = ErrorResponse.class)
+              )
+          )}
+      )
   )}
   )
   public RouterFunction<ServerResponse> routerFunction() {
     return route(POST(PATH), capacityHandler::createCapacity)
         .andRoute(GET(PATH), capacityHandler::findAll)
+        .andRoute(POST(VALIDATE_CAPACITIES), capacityHandler::validateCapacities)
         .filter(globalErrorWebFilter);
   }
 }

@@ -9,8 +9,10 @@ import co.com.capacidad.model.exception.InvalidFormatParamException;
 import co.com.capacidad.model.page.CapacityPageCommand;
 import co.com.capacidad.model.page.SortDirection;
 import co.com.capacidad.usecase.capacity.CapacityUseCase;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -88,5 +90,19 @@ public class CapacityHandler {
             .ok()
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(pageResponse));
+  }
+
+  public Mono<ServerResponse> validateCapacities(ServerRequest serverRequest) {
+    log.info("Received request to validate capacities at path={} method={}",
+        serverRequest.path(),
+        serverRequest.method()
+    );
+    return serverRequest
+        .bodyToMono(new ParameterizedTypeReference<Set<String>>() {
+        })
+        .flatMap(useCase::validateCapacities)
+        .then(ServerResponse
+            .noContent()
+            .build());
   }
 }

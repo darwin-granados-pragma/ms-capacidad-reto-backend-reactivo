@@ -11,5 +11,7 @@ public interface CapacityRepository {
 
   Flux<Capacity> findAllOrderByName(CapacityPageCommand command);
 
+  Mono<Boolean> existsById(String id);
+
   Mono<Long> getTotalCount();
 }

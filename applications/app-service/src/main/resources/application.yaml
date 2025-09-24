@@ -63,3 +63,39 @@ adapters:
     schema: "${MS_CAPACIDAD_R2DBC_SCHEMA}"
     username: "${MS_CAPACIDAD_R2DBC_USERNAME}"
     password: "${MS_CAPACIDAD_R2DBC_PASSWORD}"
+
+---
+spring:
+  config:
+    activate:
+      on-profile: test
+  flyway:
+    enabled: false
+  r2dbc:
+    url: r2dbc:h2:mem:///testdb;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+---
+
+spring:
+  config:
+    activate:
+      on-profile: dev
+logging:
+  level:
+    co.com.capacidad: DEBUG
+    org.springframework.r2dbc: DEBUG
+
+---
+
+spring:
+  config:
+    activate:
+      on-profile: prod
+logging:
+  level:
+    com.capacidad: INFO

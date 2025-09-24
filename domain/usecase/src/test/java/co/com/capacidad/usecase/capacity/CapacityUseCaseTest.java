@@ -1,6 +1,8 @@
 package co.com.capacidad.usecase.capacity;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -10,6 +12,7 @@ import co.com.capacidad.model.capacity.CapacityCreate;
 import co.com.capacidad.model.capacity.CapacityResponse;
 import co.com.capacidad.model.capacity.CapacitySortBy;
 import co.com.capacidad.model.exception.BusinessException;
+import co.com.capacidad.model.exception.ObjectNotFoundException;
 import co.com.capacidad.model.gateways.CapacityRepository;
 import co.com.capacidad.model.gateways.TechnologyGateway;
 import co.com.capacidad.model.gateways.TransactionalGateway;
@@ -139,5 +142,46 @@ class CapacityUseCaseTest {
         .create(result)
         .expectNext(expectedResponse)
         .verifyComplete();
+  }
+
+  @Test
+  void shouldCompleteWhenAllIdsExist() {
+    // Arrange
+    Set<String> existingIds = Set.of("id-1", "id-2", "id-3");
+    when(repository.existsById(anyString())).thenReturn(Mono.just(true));
+
+    // Act
+    var result = capacityUseCase.validateCapacities(existingIds);
+
+    // Assert
+    StepVerifier
+        .create(result)
+        .verifyComplete();
+  }
+
+  @Test
+  void shouldReturnErrorWhenOneIdDoesNotExist() {
+    // Arrange
+    String invalidId = "invalid-id";
+    String validId1 = "id-1";
+    String validId3 = "id-3";
+    Set<String> idsToValidate = Set.of(validId1, invalidId, validId3);
+
+    lenient()
+        .when(repository.existsById(validId1))
+        .thenReturn(Mono.just(true));
+    lenient()
+        .when(repository.existsById(validId3))
+        .thenReturn(Mono.just(true));
+    when(repository.existsById(invalidId)).thenReturn(Mono.just(false));
+
+    // Act
+    var result = capacityUseCase.validateCapacities(idsToValidate);
+
+    // Assert
+    StepVerifier
+        .create(result)
+        .expectError(ObjectNotFoundException.class)
+        .verify();
   }
 }
