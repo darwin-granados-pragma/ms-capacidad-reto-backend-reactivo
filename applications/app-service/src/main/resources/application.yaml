@@ -1,14 +1,101 @@
-##Spring Configuration
 server:
-  port: 8080
+  port: 8081
 spring:
   application:
-    name: ms-capacidad
-  devtools:
-    add-properties: false
+    name: "ms-capacidad"
+  profiles:
+    active: ${MS_CAPACIDAD_PROFILE_ACTIVE}
+  flyway:
+    url: "jdbc:postgresql://${MS_CAPACIDAD_R2DBC_HOST}:${MS_CAPACIDAD_R2DBC_PORT}/${MS_CAPACIDAD_R2DBC_DATABASE}"
+    user: "${MS_CAPACIDAD_R2DBC_USERNAME}"
+    password: "${MS_CAPACIDAD_R2DBC_PASSWORD}"
+    enabled: true
+    locations: "classpath:db/migration"
+    baseline-on-migrate: true
+    validate-on-migrate: true
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,prometheus"
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  metrics:
+    tags:
+      application: "${spring.application.name}"
+  health:
+    circuitbreakers:
+      enabled: true
+adapter:
+  restconsumer:
+    timeout: 5000
+    url: "${MS_CAPACIDAD_REST_CONSUMER_URL}"
+cors:
+  allowed-origins: '${CORS_ALLOWED_ORIGINS}'
+resilience4j:
+  circuitbreaker:
+    instances:
+      testGet:
+        registerHealthIndicator: true
+        failureRateThreshold: 50
+        slowCallRateThreshold: 50
+        slowCallDurationThreshold: "2s"
+        permittedNumberOfCallsInHalfOpenState: 3
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 10
+        waitDurationInOpenState: "10s"
+      testPost:
+        registerHealthIndicator: true
+        failureRateThreshold: 50
+        slowCallRateThreshold: 50
+        slowCallDurationThreshold: "2s"
+        permittedNumberOfCallsInHalfOpenState: 3
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 10
+        waitDurationInOpenState: "10s"
+adapters:
+  r2dbc:
+    host: "${MS_CAPACIDAD_R2DBC_HOST}"
+    port: "${MS_CAPACIDAD_R2DBC_PORT}"
+    database: "${MS_CAPACIDAD_R2DBC_DATABASE}"
+    schema: "${MS_CAPACIDAD_R2DBC_SCHEMA}"
+    username: "${MS_CAPACIDAD_R2DBC_USERNAME}"
+    password: "${MS_CAPACIDAD_R2DBC_PASSWORD}"
+
+---
+spring:
+  config:
+    activate:
+      on-profile: test
+  flyway:
+    enabled: false
+  r2dbc:
+    url: r2dbc:h2:mem:///testdb;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
   h2:
     console:
       enabled: true
-      path: /h2
-  profiles:
-    include:
+      path: /h2-console
+---
+
+spring:
+  config:
+    activate:
+      on-profile: dev
+logging:
+  level:
+    co.com.capacidad: DEBUG
+    org.springframework.r2dbc: DEBUG
+
+---
+
+spring:
+  config:
+    activate:
+      on-profile: prod
+logging:
+  level:
+    com.capacidad: INFO
