@@ -38,9 +38,29 @@ public class CapacityUseCase {
   }
 
   public Mono<PageResponse<CapacityResponse>> getCapacities(CapacityPageCommand command) {
-    CapacitySortBy sortBy = command.getSortBy();
-    CapacityRetrieveStrategy strategy = factoryUseCase.findStrategy(sortBy);
-    return strategy.getCapacityResponse(command);
+    return Mono.defer(() -> {
+      CapacitySortBy sortBy = command.getSortBy();
+      CapacityRetrieveStrategy strategy = factoryUseCase.findStrategy(sortBy);
+      return strategy.getCapacityResponse(command);
+    });
+  }
+
+  public Flux<CapacityResponse> findCapacitiesByIdBootcamp(String idBootcamp) {
+    return repository
+        .findCapacitiesByIdBootcamp(idBootcamp)
+        .flatMap(capacity -> technologyGateway
+            .getTechnologiesByCapacityId(capacity.getId())
+            .collectList()
+            .map(technologyList -> CapacityResponse
+                .builder()
+                .id(capacity.getId())
+                .name(capacity.getName())
+                .description(capacity.getDescription())
+                .technologies(technologyList)
+                .build()))
+        .switchIfEmpty(Mono.error(new ObjectNotFoundException(ErrorCode.BOOTCAMP_NOT_FOUND,
+            idBootcamp
+        )));
   }
 
   public Mono<Void> validateCapacities(Set<String> capacities) {

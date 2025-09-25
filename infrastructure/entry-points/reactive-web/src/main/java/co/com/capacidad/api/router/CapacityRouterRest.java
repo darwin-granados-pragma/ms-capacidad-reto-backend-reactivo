@@ -33,6 +33,7 @@ public class CapacityRouterRest {
 
   private static final String PATH = "/api/v1/capacity";
   private static final String VALIDATE_CAPACITIES = PATH + "/validate";
+  private static final String GET_CAPACITIES_BOOTCAMP = "/api/v1/bootcamp/{idBootcamp}/capacities";
 
   private final CapacityHandler capacityHandler;
   private final GlobalErrorWebFilter globalErrorWebFilter;
@@ -76,22 +77,18 @@ public class CapacityRouterRest {
           description = "Recibe datos para parametrizar la búsqueda",
           parameters = {@Parameter(name = "sortBy",
               in = ParameterIn.QUERY,
-              required = false,
               description = "Propiedad a ordenar",
               schema = @Schema(type = "String")
           ), @Parameter(name = "sortDirection",
               in = ParameterIn.QUERY,
-              required = false,
               description = "Dirección de la lista (asc, desc)",
               schema = @Schema(type = "String")
           ), @Parameter(name = "page",
               in = ParameterIn.QUERY,
-              required = false,
               description = "Número de pagina a recuperar",
               schema = @Schema(type = "Integer")
           ), @Parameter(name = "size",
               in = ParameterIn.QUERY,
-              required = false,
               description = "Cantidad de registros por pagina",
               schema = @Schema(type = "Integer")
           )},
@@ -124,12 +121,37 @@ public class CapacityRouterRest {
               )
           )}
       )
+  ), @RouterOperation(method = RequestMethod.GET,
+      path = GET_CAPACITIES_BOOTCAMP,
+      beanClass = CapacityHandler.class,
+      beanMethod = "getCapacitiesByIdBootcamp",
+      operation = @Operation(operationId = "getCapacitiesByIdBootcamp",
+          summary = "Obtener capacidades por bootcamp",
+          description = "Recibe el identificador del bootcamp y devuelve la lista de capacidades asociadas a ese bootcamp",
+          parameters = {@Parameter(name = "idBootcamp",
+              in = ParameterIn.PATH,
+              required = true,
+              description = "Identificador único del bootcamp",
+              schema = @Schema(type = "string",
+                  format = "uuid",
+                  example = "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+              )
+          )},
+          responses = {@ApiResponse(responseCode = "200", description = "Capacidades recuperadas"
+          ), @ApiResponse(responseCode = "404",
+              description = "Bootcamp no encontrado",
+              content = @Content(mediaType = "application/json",
+                  schema = @Schema(implementation = ErrorResponse.class)
+              )
+          )}
+      )
   )}
   )
   public RouterFunction<ServerResponse> routerFunction() {
     return route(POST(PATH), capacityHandler::createCapacity)
         .andRoute(GET(PATH), capacityHandler::findAll)
         .andRoute(POST(VALIDATE_CAPACITIES), capacityHandler::validateCapacities)
+        .andRoute(GET(GET_CAPACITIES_BOOTCAMP), capacityHandler::getCapacitiesByIdBootcamp)
         .filter(globalErrorWebFilter);
   }
 }

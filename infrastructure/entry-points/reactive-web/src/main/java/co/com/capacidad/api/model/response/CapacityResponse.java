@@ -13,6 +13,7 @@ import lombok.Setter;
 @Builder(toBuilder = true)
 public class CapacityResponse {
 
+  private String id;
   private String name;
   private String description;
 }

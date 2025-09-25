@@ -28,12 +28,12 @@ public class CapacitySortByNameUseCase implements CapacityRetrieveStrategy {
   public Mono<PageResponse<CapacityResponse>> getCapacityResponse(CapacityPageCommand command) {
     return repository
         .getTotalCount()
-        .flatMap(total -> getLoans(command)
+        .flatMap(total -> getCapacityResponses(command)
             .collectList()
             .flatMap(capacityResponses -> buildPageResponse(capacityResponses, command, total)));
   }
 
-  private Flux<CapacityResponse> getLoans(CapacityPageCommand command) {
+  private Flux<CapacityResponse> getCapacityResponses(CapacityPageCommand command) {
     return repository
         .findAllOrderByName(command)
         .flatMap(this::mapToCapacityResponse);

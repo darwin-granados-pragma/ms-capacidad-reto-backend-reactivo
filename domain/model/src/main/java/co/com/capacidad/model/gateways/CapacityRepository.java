@@ -14,4 +14,6 @@ public interface CapacityRepository {
   Mono<Boolean> existsById(String id);
 
   Mono<Long> getTotalCount();
+
+  Flux<Capacity> findCapacitiesByIdBootcamp(String idBootcamp);
 }

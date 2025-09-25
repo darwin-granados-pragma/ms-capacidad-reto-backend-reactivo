@@ -105,4 +105,20 @@ public class CapacityHandler {
             .noContent()
             .build());
   }
+
+  public Mono<ServerResponse> getCapacitiesByIdBootcamp(ServerRequest serverRequest) {
+    log.info("Request received to get the list of capacities by bootcamp: path={}, method={}",
+        serverRequest.path(),
+        serverRequest.method()
+    );
+    return Mono.defer(() -> {
+      String idBootcamp = serverRequest.pathVariable("idBootcamp");
+      return useCase
+          .findCapacitiesByIdBootcamp(idBootcamp)
+          .collectList()
+          .flatMap(capacityResponses -> ServerResponse
+              .ok()
+              .bodyValue(capacityResponses));
+    });
+  }
 }

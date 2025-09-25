@@ -11,6 +11,10 @@ public enum ErrorCode {
       ExceptionCode.NOT_FOUND,
       "No se encontró la capacidad con id: "
   ),
+  BOOTCAMP_NOT_FOUND("BOOTCAMP-NOT-FOUND",
+      ExceptionCode.NOT_FOUND,
+      "No se encontró el bootcamp con id: "
+  ),
   CAPACITY_TECHNOLOGIES_SIZE("CAPACITY-TECHNOLOGIES-SIZE",
       ExceptionCode.INVALID_INPUT,
       "Una capacidad debe tener entre 3 y 20 tecnologías"

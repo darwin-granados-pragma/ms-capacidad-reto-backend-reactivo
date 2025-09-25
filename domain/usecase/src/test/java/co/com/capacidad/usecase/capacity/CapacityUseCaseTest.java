@@ -20,11 +20,13 @@ import co.com.capacidad.model.input.CapacityRetrieveStrategy;
 import co.com.capacidad.model.page.CapacityPageCommand;
 import co.com.capacidad.model.page.PageResponse;
 import co.com.capacidad.model.page.SortDirection;
+import co.com.capacidad.model.technology.Technology;
 import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -34,6 +36,7 @@ import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -54,6 +57,11 @@ class CapacityUseCaseTest {
   @InjectMocks
   private CapacityUseCase capacityUseCase;
 
+  private Capacity capacity;
+  private String idCapacity;
+  private String idBootcamp;
+  private Technology technology;
+
   private static Stream<Arguments> invalidTechnologySetsProvider() {
     Set<String> lessThanThree = Set.of("tech1", "tech2");
     Set<String> moreThanTwenty = IntStream
@@ -64,19 +72,30 @@ class CapacityUseCaseTest {
     return Stream.of(Arguments.of(lessThanThree), Arguments.of(moreThanTwenty));
   }
 
-  @Test
-  void shouldCreateCapacityAndAssignTechnologies() {
-    // Arrange
-    var techIds = Set.of("tech1", "tech2", "tech3");
-    var createData = new CapacityCreate("DevOps", "CI/CD expert", techIds);
-    var savedCapacity = Capacity
+  @BeforeEach
+  void setUp() {
+    capacity = Capacity
         .builder()
         .id("cap123")
         .name("DevOps")
         .description("CI/CD expert")
         .build();
+    idCapacity = capacity.getId();
+    idBootcamp = "test bootcamp id";
+    technology = Technology
+        .builder()
+        .id("tech id")
+        .name("tech name")
+        .build();
+  }
+
+  @Test
+  void shouldCreateCapacityAndAssignTechnologies() {
+    // Arrange
+    var techIds = Set.of("tech1", "tech2", "tech3");
+    var createData = new CapacityCreate("DevOps", "CI/CD expert", techIds);
     when(technologyGateway.validateTechnologies(techIds)).thenReturn(Mono.empty());
-    when(repository.save(any(Capacity.class))).thenReturn(Mono.just(savedCapacity));
+    when(repository.save(any(Capacity.class))).thenReturn(Mono.just(capacity));
     when(technologyGateway.assignTechnologyToCapacity("cap123", techIds)).thenReturn(Mono.empty());
     when(transactionalGateway.execute(ArgumentMatchers.<Mono<?>>any())).thenAnswer(invocation -> invocation.getArgument(
         0));
@@ -87,7 +106,7 @@ class CapacityUseCaseTest {
     // Assert
     StepVerifier
         .create(resultMono)
-        .expectNext(savedCapacity)
+        .expectNext(capacity)
         .verifyComplete();
 
     verify(technologyGateway).validateTechnologies(techIds);
@@ -177,6 +196,41 @@ class CapacityUseCaseTest {
 
     // Act
     var result = capacityUseCase.validateCapacities(idsToValidate);
+
+    // Assert
+    StepVerifier
+        .create(result)
+        .expectError(ObjectNotFoundException.class)
+        .verify();
+  }
+
+  @Test
+  void shouldReturnCapacitiesByIdBootcampSuccessfully() {
+    // Arrange
+    when(repository.findCapacitiesByIdBootcamp(idBootcamp)).thenReturn(Flux.just(capacity));
+    when(technologyGateway.getTechnologiesByCapacityId(idCapacity)).thenReturn(Flux.just(technology));
+
+    // Act
+    var result = capacityUseCase.findCapacitiesByIdBootcamp(idBootcamp);
+
+    // Assert
+    StepVerifier
+        .create(result)
+        .expectNextMatches(capacityResponse -> capacityResponse
+            .getName()
+            .equals(capacity.getName()) && capacityResponse
+            .getTechnologies()
+            .size() == 1)
+        .verifyComplete();
+  }
+
+  @Test
+  void shouldThrowObjectNotFoundExceptionWhenBootcampNotFound() {
+    // Arrange
+    when(repository.findCapacitiesByIdBootcamp(idBootcamp)).thenReturn(Flux.empty());
+
+    // Act
+    var result = capacityUseCase.findCapacitiesByIdBootcamp(idBootcamp);
 
     // Assert
     StepVerifier
