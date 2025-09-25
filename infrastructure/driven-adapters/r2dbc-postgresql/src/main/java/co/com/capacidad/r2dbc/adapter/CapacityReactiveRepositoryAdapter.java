@@ -37,15 +37,17 @@ public class CapacityReactiveRepositoryAdapter extends
   @Override
   public Flux<Capacity> findAllOrderByName(CapacityPageCommand command) {
     log.info("Retrieving capacities");
-    Sort sort = Sort.by(Sort.Direction.fromString(command
-        .getSortDirection()
-        .name()), "name"
-    );
-    Pageable pageable = PageRequest.of(command.getPage(), command.getSize(), sort);
+    return Flux.defer(() -> {
+      Sort sort = Sort.by(Sort.Direction.fromString(command
+          .getSortDirection()
+          .name()), "name"
+      );
+      Pageable pageable = PageRequest.of(command.getPage(), command.getSize(), sort);
 
-    return super.repository
-        .findAllBy(pageable)
-        .map(this::toEntity);
+      return super.repository
+          .findAllBy(pageable)
+          .map(this::toEntity);
+    });
   }
 
   @Override
@@ -58,5 +60,13 @@ public class CapacityReactiveRepositoryAdapter extends
   public Mono<Long> getTotalCount() {
     log.info("Getting total elements of the Capacity");
     return super.repository.count();
+  }
+
+  @Override
+  public Flux<Capacity> findCapacitiesByIdBootcamp(String idBootcamp) {
+    log.info("Retrieving capacities from bootcamp with id: {}", idBootcamp);
+    return super.repository
+        .findCapacitiesByIdBootcamp(idBootcamp)
+        .map(this::toEntity);
   }
 }
