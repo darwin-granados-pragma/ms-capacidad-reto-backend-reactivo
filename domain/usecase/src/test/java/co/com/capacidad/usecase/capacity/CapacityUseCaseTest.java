@@ -4,6 +4,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -11,8 +12,10 @@ import co.com.capacidad.model.capacity.Capacity;
 import co.com.capacidad.model.capacity.CapacityCreate;
 import co.com.capacidad.model.capacity.CapacityResponse;
 import co.com.capacidad.model.capacity.CapacitySortBy;
+import co.com.capacidad.model.capacity.bootcamp.CapacityBootcamp;
 import co.com.capacidad.model.exception.BusinessException;
 import co.com.capacidad.model.exception.ObjectNotFoundException;
+import co.com.capacidad.model.gateways.CapacityBootcampRepository;
 import co.com.capacidad.model.gateways.CapacityRepository;
 import co.com.capacidad.model.gateways.TechnologyGateway;
 import co.com.capacidad.model.gateways.TransactionalGateway;
@@ -22,6 +25,7 @@ import co.com.capacidad.model.page.PageResponse;
 import co.com.capacidad.model.page.SortDirection;
 import co.com.capacidad.model.technology.Technology;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -53,6 +57,8 @@ class CapacityUseCaseTest {
   private CapacityFactoryUseCase factoryUseCase;
   @Mock
   private CapacityRetrieveStrategy mockStrategy;
+  @Mock
+  private CapacityBootcampRepository capacityBootcampRepository;
 
   @InjectMocks
   private CapacityUseCase capacityUseCase;
@@ -237,5 +243,68 @@ class CapacityUseCaseTest {
         .create(result)
         .expectError(ObjectNotFoundException.class)
         .verify();
+  }
+
+  @Test
+  void delete_whenBootcampHasCapacities_shouldDeleteAllRelations() {
+    // Arrange
+    var capacityBootcamp1 = CapacityBootcamp
+        .builder()
+        .id("cb-1")
+        .idCapacity("cap-1")
+        .idBootcamp(idBootcamp)
+        .build();
+    var capacityBootcamp2 = CapacityBootcamp
+        .builder()
+        .id("cb-2")
+        .idCapacity("cap-2")
+        .idBootcamp(idBootcamp)
+        .build();
+    var capacities = List.of(capacityBootcamp1, capacityBootcamp2);
+
+    when(capacityBootcampRepository.findAllByIdBootcamp(idBootcamp)).thenReturn(Flux.fromIterable(
+        capacities));
+    when(capacityBootcampRepository.deleteAll(capacities)).thenReturn(Mono.empty());
+    when(repository.deleteById(anyString())).thenReturn(Mono.empty());
+    when(technologyGateway.deleteRelationsCapacityTechnologies(anyString())).thenReturn(Mono.empty());
+
+    when(transactionalGateway.execute(ArgumentMatchers.<Mono<?>>any())).thenAnswer(invocation -> invocation.getArgument(
+        0));
+
+    // Act
+    var resultMono = capacityUseCase.deleteBootcampCapacitiesAndRelationsWithTechnologies(idBootcamp);
+
+    // Assert
+    StepVerifier
+        .create(resultMono)
+        .expectComplete()
+        .verify();
+    verify(capacityBootcampRepository, times(1)).deleteAll(capacities);
+    verify(repository, times(1)).deleteById(capacityBootcamp1.getIdCapacity());
+    verify(repository, times(1)).deleteById(capacityBootcamp2.getIdCapacity());
+    verify(technologyGateway,
+        times(1)
+    ).deleteRelationsCapacityTechnologies(capacityBootcamp1.getIdCapacity());
+    verify(technologyGateway,
+        times(1)
+    ).deleteRelationsCapacityTechnologies(capacityBootcamp2.getIdCapacity());
+  }
+
+  @Test
+  void delete_whenBootcampHasNoCapacities_shouldCompleteWithoutDeletions() {
+    // Arrange
+    when(capacityBootcampRepository.findAllByIdBootcamp(idBootcamp)).thenReturn(Flux.empty());
+
+    // Act
+    var resultMono = capacityUseCase.deleteBootcampCapacitiesAndRelationsWithTechnologies(idBootcamp);
+
+    // Assert
+    StepVerifier
+        .create(resultMono)
+        .expectComplete()
+        .verify();
+    verify(capacityBootcampRepository, never()).deleteAll(any());
+    verify(repository, never()).deleteById(anyString());
+    verify(technologyGateway, never()).deleteRelationsCapacityTechnologies(anyString());
   }
 }

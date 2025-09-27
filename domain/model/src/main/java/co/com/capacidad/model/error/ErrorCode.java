@@ -26,6 +26,10 @@ public enum ErrorCode {
   INVALID_TECHNOLOGIES("INVALID-TECHNOLOGIES", ExceptionCode.NOT_FOUND, "Error! "),
   INVALID_SORT_BY("INVALID-SORT-BY", ExceptionCode.INVALID_INPUT, "Parámetro sortBy no válido."),
   INVALID_PARAMETERS("INVALID-PARAMETERS", ExceptionCode.INVALID_INPUT, "Parámetros inválidos"),
+  CANNOT_POSIBLE_DELETE_TECHNOLOGY_RELATIONS("CANNOT-POSIBLE-DELETE-TECHNOLOGY-RELATIONS",
+      ExceptionCode.UNEXPECTED_ERROR,
+      "No fue posible eliminar las tecnologías relacionadas a la capacidad"
+  ),
   ;
 
   private final String fullErrorCode;

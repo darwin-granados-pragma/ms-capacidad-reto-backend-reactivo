@@ -69,4 +69,17 @@ public class CapacityReactiveRepositoryAdapter extends
         .findCapacitiesByIdBootcamp(idBootcamp)
         .map(this::toEntity);
   }
+
+  @Override
+  public Mono<Void> deleteById(String id) {
+    return super.repository
+        .deleteById(id)
+        .onErrorResume(error -> {
+          log.error("Cannot posible delete the capacity with id: {} error message: {}",
+              id,
+              error.getMessage()
+          );
+          return Mono.empty();
+        });
+  }
 }

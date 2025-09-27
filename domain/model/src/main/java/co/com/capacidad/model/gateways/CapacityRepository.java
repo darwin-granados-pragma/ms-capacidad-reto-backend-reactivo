@@ -16,4 +16,6 @@ public interface CapacityRepository {
   Mono<Long> getTotalCount();
 
   Flux<Capacity> findCapacitiesByIdBootcamp(String idBootcamp);
+
+  Mono<Void> deleteById(String id);
 }

@@ -1,5 +1,6 @@
 package co.com.capacidad.api.router;
 
+import static org.springframework.web.reactive.function.server.RequestPredicates.DELETE;
 import static org.springframework.web.reactive.function.server.RequestPredicates.GET;
 import static org.springframework.web.reactive.function.server.RequestPredicates.POST;
 import static org.springframework.web.reactive.function.server.RouterFunctions.route;
@@ -31,9 +32,11 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 @RequiredArgsConstructor
 public class CapacityRouterRest {
 
-  private static final String PATH = "/api/v1/capacity";
+  private static final String V1 = "/api/v1";
+  private static final String PATH = V1 + "/capacity";
   private static final String VALIDATE_CAPACITIES = PATH + "/validate";
-  private static final String GET_CAPACITIES_BOOTCAMP = "/api/v1/bootcamp/{idBootcamp}/capacities";
+  private static final String GET_CAPACITIES_BOOTCAMP = V1 + "/bootcamp/{idBootcamp}/capacities";
+  private static final String DELETE_CAPACITIES = V1 + "/bootcamp/{idBootcamp}";
 
   private final CapacityHandler capacityHandler;
   private final GlobalErrorWebFilter globalErrorWebFilter;
@@ -145,6 +148,21 @@ public class CapacityRouterRest {
               )
           )}
       )
+  ), @RouterOperation(method = RequestMethod.DELETE,
+      path = DELETE_CAPACITIES,
+      beanClass = CapacityHandler.class,
+      beanMethod = "deleteCapacitiesByIdBootcamp",
+      operation = @Operation(operationId = "deleteCapacitiesByIdBootcamp",
+          summary = "Eliminar capacidades por bootcamp",
+          description = "Recibe el identificador y elimina las capacidades relacionadas al bootcamp.",
+          parameters = {@Parameter(in = ParameterIn.PATH,
+              description = "Identificador del bootcamp",
+              schema = @Schema(type = "String")
+          )},
+          responses = {@ApiResponse(responseCode = "204",
+              description = "Bootcamp y capacidades asociadas eliminadas correctamente"
+          )}
+      )
   )}
   )
   public RouterFunction<ServerResponse> routerFunction() {
@@ -152,6 +170,7 @@ public class CapacityRouterRest {
         .andRoute(GET(PATH), capacityHandler::findAll)
         .andRoute(POST(VALIDATE_CAPACITIES), capacityHandler::validateCapacities)
         .andRoute(GET(GET_CAPACITIES_BOOTCAMP), capacityHandler::getCapacitiesByIdBootcamp)
+        .andRoute(DELETE(DELETE_CAPACITIES), capacityHandler::deleteCapacitiesByIdBootcamp)
         .filter(globalErrorWebFilter);
   }
 }

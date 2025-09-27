@@ -121,4 +121,20 @@ public class CapacityHandler {
               .bodyValue(capacityResponses));
     });
   }
+
+  public Mono<ServerResponse> deleteCapacitiesByIdBootcamp(ServerRequest serverRequest) {
+    log.info("Received request to delete a bootcamp at path={} method={}",
+        serverRequest.path(),
+        serverRequest.method()
+    );
+    return Mono.defer(() -> {
+      String idBootcamp = serverRequest.pathVariable("idBootcamp");
+      return useCase
+          .deleteBootcampCapacitiesAndRelationsWithTechnologies(idBootcamp)
+          .then(ServerResponse
+              .noContent()
+              .build());
+    });
+  }
+
 }
