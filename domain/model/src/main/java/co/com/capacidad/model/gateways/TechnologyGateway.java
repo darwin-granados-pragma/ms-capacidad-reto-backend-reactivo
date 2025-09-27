@@ -12,4 +12,6 @@ public interface TechnologyGateway {
   Mono<Void> validateTechnologies(Set<String> technologies);
 
   Flux<Technology> getTechnologiesByCapacityId(String idCapacity);
+
+  Mono<Void> deleteRelationsCapacityTechnologies(String idCapacity);
 }

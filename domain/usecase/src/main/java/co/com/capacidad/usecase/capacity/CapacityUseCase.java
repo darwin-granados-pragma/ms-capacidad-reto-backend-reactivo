@@ -4,15 +4,18 @@ import co.com.capacidad.model.capacity.Capacity;
 import co.com.capacidad.model.capacity.CapacityCreate;
 import co.com.capacidad.model.capacity.CapacityResponse;
 import co.com.capacidad.model.capacity.CapacitySortBy;
+import co.com.capacidad.model.capacity.bootcamp.CapacityBootcamp;
 import co.com.capacidad.model.error.ErrorCode;
 import co.com.capacidad.model.exception.BusinessException;
 import co.com.capacidad.model.exception.ObjectNotFoundException;
+import co.com.capacidad.model.gateways.CapacityBootcampRepository;
 import co.com.capacidad.model.gateways.CapacityRepository;
 import co.com.capacidad.model.gateways.TechnologyGateway;
 import co.com.capacidad.model.gateways.TransactionalGateway;
 import co.com.capacidad.model.input.CapacityRetrieveStrategy;
 import co.com.capacidad.model.page.CapacityPageCommand;
 import co.com.capacidad.model.page.PageResponse;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +29,7 @@ public class CapacityUseCase {
   private final TechnologyGateway technologyGateway;
   private final TransactionalGateway transactionalGateway;
   private final CapacityFactoryUseCase factoryUseCase;
+  private final CapacityBootcampRepository capacityBootcampRepository;
 
   public Mono<Capacity> createCapacity(CapacityCreate data) {
     return validateTechnologiesSize(data.idTechnologies())
@@ -70,6 +74,12 @@ public class CapacityUseCase {
         .then();
   }
 
+  public Mono<Void> deleteBootcampCapacitiesAndRelationsWithTechnologies(String idBootcamp) {
+    return getBootcampCapacities(idBootcamp)
+        .collectList()
+        .flatMap(this::deleteAllRelations);
+  }
+
   private Mono<Void> validateTechnologiesSize(Set<String> technologies) {
     if (technologies.size() < 3 || technologies.size() > 20) {
       return Mono.error(new BusinessException(ErrorCode.CAPACITY_TECHNOLOGIES_SIZE));
@@ -100,5 +110,32 @@ public class CapacityUseCase {
         .existsById(id)
         .flatMap(exists -> Boolean.TRUE.equals(exists) ? Mono.empty()
             : Mono.error(new ObjectNotFoundException(ErrorCode.CAPACITY_NOT_FOUND, id)));
+  }
+
+  private Mono<Void> deleteAllRelations(List<CapacityBootcamp> capacityBootcamps) {
+    if (capacityBootcamps.isEmpty()) {
+      return Mono.empty();
+    }
+    Mono<Void> deleteAllBootcampCapacities = capacityBootcampRepository
+        .deleteAll(capacityBootcamps)
+        .then()
+        .as(transactionalGateway::execute);
+
+    Mono<Void> deleteAllCapacitiesAndTechnologies = Flux
+        .fromIterable(capacityBootcamps)
+        .flatMap(capacityBootcamp -> deleteCapacityAndRelationsWithTechnologies(capacityBootcamp.getIdCapacity()))
+        .then();
+
+    return deleteAllBootcampCapacities.then(deleteAllCapacitiesAndTechnologies);
+  }
+
+  private Mono<Void> deleteCapacityAndRelationsWithTechnologies(String idCapacity) {
+    return repository
+        .deleteById(idCapacity)
+        .then(technologyGateway.deleteRelationsCapacityTechnologies(idCapacity));
+  }
+
+  private Flux<CapacityBootcamp> getBootcampCapacities(String idBootcamp) {
+    return capacityBootcampRepository.findAllByIdBootcamp(idBootcamp);
   }
 }

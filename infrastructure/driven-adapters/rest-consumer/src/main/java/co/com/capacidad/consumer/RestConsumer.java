@@ -1,6 +1,7 @@
 package co.com.capacidad.consumer;
 
 import co.com.capacidad.model.error.ErrorCode;
+import co.com.capacidad.model.exception.BusinessException;
 import co.com.capacidad.model.exception.InvalidTechnologyException;
 import co.com.capacidad.model.exception.TechnologyAssignmentException;
 import co.com.capacidad.model.gateways.TechnologyGateway;
@@ -44,7 +45,7 @@ public class RestConsumer implements TechnologyGateway {
   public Mono<Void> validateTechnologies(Set<String> technologies) {
     return client
         .post()
-        .uri("/api/v1/tecnologia/validate")
+        .uri("/api/v1/technology/validate")
         .bodyValue(technologies)
         .retrieve()
         .onStatus(HttpStatusCode::isError,
@@ -70,6 +71,20 @@ public class RestConsumer implements TechnologyGateway {
                   idCapacity
               );
               return Flux.empty();
+            }
+        );
+  }
+
+  @Override
+  public Mono<Void> deleteRelationsCapacityTechnologies(String idCapacity) {
+    return client
+        .delete()
+        .uri("/api/v1/capacity/{idCapacity}", idCapacity)
+        .retrieve()
+        .bodyToMono(Void.class)
+        .onErrorResume(WebClientResponseException.InternalServerError.class, ex -> {
+              log.error("Error to delete technologies: {}", ex.getMessage());
+              return Mono.error(new BusinessException(ErrorCode.CANNOT_POSIBLE_DELETE_TECHNOLOGY_RELATIONS));
             }
         );
   }
