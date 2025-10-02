@@ -1,5 +1,7 @@
 package co.com.capacidad.api.mapper;
 
+import co.com.capacidad.api.model.response.CapacityTechnologyRestResponse;
+import co.com.capacidad.model.capacity.CapacityTechnologyTotal;
 import co.com.capacidad.model.capacity.bootcamp.CapacityBootcampCreate;
 import java.util.Set;
 import org.mapstruct.Mapper;
@@ -9,4 +11,7 @@ import org.mapstruct.MappingConstants.ComponentModel;
 public interface CapacityBootcampRestMapper {
 
   CapacityBootcampCreate toCapacityBootcampCreate(String idBootcamp, Set<String> capacities);
+
+  CapacityTechnologyRestResponse toCapacityTechnologyRestResponse(
+      CapacityTechnologyTotal capacityTechnologyTotal);
 }

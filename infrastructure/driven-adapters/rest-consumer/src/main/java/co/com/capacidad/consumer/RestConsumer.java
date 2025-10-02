@@ -3,6 +3,7 @@ package co.com.capacidad.consumer;
 import co.com.capacidad.model.error.ErrorCode;
 import co.com.capacidad.model.exception.BusinessException;
 import co.com.capacidad.model.exception.InvalidTechnologyException;
+import co.com.capacidad.model.exception.ObjectNotFoundException;
 import co.com.capacidad.model.exception.TechnologyAssignmentException;
 import co.com.capacidad.model.gateways.TechnologyGateway;
 import co.com.capacidad.model.technology.Technology;
@@ -85,6 +86,20 @@ public class RestConsumer implements TechnologyGateway {
         .onErrorResume(WebClientResponseException.InternalServerError.class, ex -> {
               log.error("Error to delete technologies: {}", ex.getMessage());
               return Mono.error(new BusinessException(ErrorCode.CANNOT_POSIBLE_DELETE_TECHNOLOGY_RELATIONS));
+            }
+        );
+  }
+
+  @Override
+  public Mono<Long> countTechnologiesByCapacityId(String idCapacity) {
+    return client
+        .get()
+        .uri("/api/v1/capacity/{id}/technologies/count", idCapacity)
+        .retrieve()
+        .bodyToMono(Long.class)
+        .onErrorResume(WebClientResponseException.NotFound.class, ex -> {
+              log.warn("Capacity not found by id={}. The endpoint returned 404.", idCapacity);
+              return Mono.error(new ObjectNotFoundException(ErrorCode.CAPACITY_NOT_FOUND, idCapacity));
             }
         );
   }

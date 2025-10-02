@@ -14,4 +14,6 @@ public interface TechnologyGateway {
   Flux<Technology> getTechnologiesByCapacityId(String idCapacity);
 
   Mono<Void> deleteRelationsCapacityTechnologies(String idCapacity);
+
+  Mono<Long> countTechnologiesByCapacityId(String idCapacity);
 }
