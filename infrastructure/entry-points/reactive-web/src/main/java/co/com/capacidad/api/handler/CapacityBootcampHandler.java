@@ -29,8 +29,9 @@ public class CapacityBootcampHandler {
       return serverRequest
           .bodyToMono(new ParameterizedTypeReference<Set<String>>() {
           })
-          .flatMap(idCapacities -> useCase.assignCapacitiesToBootcamp(mapper
-              .toCapacityBootcampCreate(idBootcamp, idCapacities
+          .flatMap(idCapacities -> useCase.assignCapacitiesToBootcamp(mapper.toCapacityBootcampCreate(
+              idBootcamp,
+              idCapacities
           )))
           .then(ServerResponse
               .noContent()
@@ -38,4 +39,19 @@ public class CapacityBootcampHandler {
     });
   }
 
+  public Mono<ServerResponse> getCountCapAndTechByIdBootcamp(ServerRequest serverRequest) {
+    log.info(
+        "Received request to count capacities and technologies by bootcamp at path={} method={}",
+        serverRequest.path(),
+        serverRequest.method()
+    );
+    return Mono.defer(() -> {
+      String idBootcamp = serverRequest.pathVariable("id");
+      return useCase
+          .getCapacitiesAndTechnologiesByIdBootcamp(idBootcamp)
+          .flatMap(response -> ServerResponse
+              .ok()
+              .bodyValue(mapper.toCapacityTechnologyRestResponse(response)));
+    });
+  }
 }
